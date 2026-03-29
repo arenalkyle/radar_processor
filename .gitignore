@@ -1,0 +1,22 @@
+# IDE
+.idea/
+*.iml
+cmake-build-debug/
+cmake-build-release/
+
+# Build artifacts
+out/
+bin/
+build/
+*.o
+*.obj
+*.exe
+
+
+# System files
+.DS_Store
+Thumbs.db
+
+# data
+*.csv
+*.bin
