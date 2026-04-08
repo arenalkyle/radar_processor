@@ -1,55 +1,50 @@
-#include <iostream>
-#include <vector>
-#include <complex>
-#include <cmath>
-#include "../include/FFT.h"
-
-const double PI = std::acos(-1);
-
-std::vector<std::complex<double>> generateSignal(int n, double freq, double fs) {
-    std::vector<std::complex<double>> signal(n);
-    for (int i = 0; i < n; ++i) {
-        double t = static_cast<double>(i) / fs;
-        signal[i] = { std::sin(2.0 * PI * freq * t), 0.0 };
-    }
-    return signal;
-}
-
-void runTest(int numSamples, double targetFreq, double fs) {
-    std::cout << "Test -> N = " << numSamples << std::endl;
-
-    auto data = generateSignal(numSamples, targetFreq, fs);
-
-    FFT::fft(data);
-
-    // Nyquist limit
-    double maxMag = 0;
-    int peakIdx = 0;
-    for (int i = 0; i < numSamples / 2; ++i) {
-        double mag = std::abs(data[i]);
-        if (mag > maxMag) {
-            maxMag = mag;
-            peakIdx = i;
-        }
-    }
-
-    double detectedFreq = peakIdx * (fs / numSamples);
-
-    std::cout << "Target: " << targetFreq << " Hz -> Detected: " << detectedFreq << " Hz" << std::endl;
-
-    if (std::abs(detectedFreq - targetFreq) <= (fs / numSamples)) {
-        std::cout << "[PASS]" << std::endl;
-    } else {
-        std::cout << "[FAIL]" << std::endl;
-    }
-}
+#include "../include/Config.h"
+#include "../include/SignalSource.h"
+#include "../include/Processor.h"
+#include "../include/PeakDetector.h"
+#include "../include/Validator.h"
+#include "../include/DataExporter.h"
+#include <spdlog/spdlog.h>
 
 int main() {
-    constexpr double fs = 2000.0; // Sample rate
-    constexpr double freq = 150.0; // Target freq
+    spdlog::info("Starting radar signal processing.");
 
-    runTest(1024, freq, fs);
-    runTest(1000, freq, fs);
+    const SignalSource source(Config::DefaultSampleRate, Config::DefaultSeed);
+    spdlog::info("Config has {} target(s).", Config::Targets.size());
 
-    return 0;
+    const auto rawSignal = source.generate(Config::DefaultSignalSize);
+    spdlog::info("Generated signal with {} samples.", Config::DefaultSignalSize);
+
+    Processor processor(Config::DefaultThreadCount);
+    const auto processedData = processor.process(rawSignal);
+    spdlog::info("Processed signal using FFT.");
+
+    const auto magnitudes = PeakDetector::toMagnitude(processedData);
+    const auto peakIndices = PeakDetector::detectPeaks(magnitudes, Config::DefaultThreshold);
+    spdlog::info("Detected {} peaks.", peakIndices.size());
+
+    std::vector<double> detectedFrequencies;
+    constexpr double resolution = Config::DefaultSampleRate / Config::DefaultSignalSize;
+    for (const size_t idx : peakIndices) {
+        detectedFrequencies.push_back(static_cast<double>(idx) * resolution);
+    }
+
+    std::vector<double> trueFrequencies;
+    for (const auto& [freq, amp, phase] : Config::Targets) {
+        trueFrequencies.push_back(freq);
+    }
+
+    const auto result = Validator::validate(trueFrequencies, detectedFrequencies, Config::DefaultToleranceHz);
+    Validator::printResult(result);
+
+
+    try {
+        DataExporter::exportToCSV("processed_data.csv", processedData);
+        spdlog::info("Exported processed data to 'processed_data.csv'.");
+    } catch (const std::exception& e) {
+        spdlog::error("Failed to export data to CSV: {}", e.what());
+    }
+
+    spdlog::info("Finished radar signal processing.");
+    return result.passed ? 0 : 1;
 }
