@@ -1,5 +1,4 @@
 #include "../include/Processor.h"
-#include <thread>
 
 #include "Config.h"
 #include "FFT.h"
@@ -23,7 +22,6 @@ std::vector<std::complex<double>> Processor::process(const std::vector<std::comp
         pool.enqueue(&Processor::processChunk, this, std::ref(data), start, end, n);
     }
 
-    // fft
     FFT::fft(data, false);
 
     // todo use threads to calculate magnitude or CFAR detection
@@ -31,7 +29,7 @@ std::vector<std::complex<double>> Processor::process(const std::vector<std::comp
     return data;
 }
 
-void Processor::processChunk(std::vector<std::complex<double> > &data, size_t start, size_t end, size_t totalN) {
+void Processor::processChunk(std::vector<std::complex<double> > &data, const size_t start, const size_t end, const size_t totalN) {
 
     for (size_t i = start; i < end; ++i) {
         const double window = Config::HammingAlpha - Config::HammingBeta * std::cos(2.0 * PI * static_cast<double>(i) / (static_cast<double>(totalN) - 1));

@@ -5,7 +5,7 @@
 #include "../include/SignalSource.h"
 #include "../include/Validator.h"
 
-// Test FFT for basic correctness
+// Test FFT to ensure it works.
 TEST(FFTTests, IdentityTransform) {
     std::vector<std::complex<double>> data = {1, 0, 0, 0};
     FFT::fft(data, false);

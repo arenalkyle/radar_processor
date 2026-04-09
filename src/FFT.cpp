@@ -2,7 +2,7 @@
 
 const double PI = acos(-1.0);
 
-void FFT::fft(std::vector<std::complex<double>>& data, bool inverse) {
+void FFT::fft(std::vector<std::complex<double>>& data, const bool inverse) {
     const size_t n = data.size();
 
     if (n > 0 && (n & (n - 1)) == 0) {
@@ -19,7 +19,7 @@ void FFT::fft(std::vector<std::complex<double>>& data, bool inverse) {
     }
 }
 
-void FFT::computeRadix2(std::vector<std::complex<double>>& data, bool inverse) { // Fastest when input length is power of two
+void FFT::computeRadix2(std::vector<std::complex<double>>& data, const bool inverse) { // Fastest when input length is power of two
     const size_t n = data.size();
 
     for (size_t i = 1, j = 0; i < n; i++) {
@@ -56,8 +56,8 @@ void FFT::computeRadix2(std::vector<std::complex<double>>& data, bool inverse) {
 }
 
 // TODO: optimize mixed radix
-void FFT::computeMixedRadix(std::vector<std::complex<double>>& data, bool inverse) { // Slower, but for flexibility
-    size_t n = data.size();
+void FFT::computeMixedRadix(std::vector<std::complex<double>>& data, const bool inverse) { // Slower, but for flexibility
+    const size_t n = data.size();
     if (n <= 1) {
         return;
     }
